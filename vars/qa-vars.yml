@@ -1,0 +1,75 @@
+# vars/qa-vars.yml
+project_id: "your-qa-gcp-project-id" # Replace with your QA GCP Project ID
+region: "us-east1"
+zone: "us-east1-b"
+network_name: "qa-vpc-network"
+network_cidr: "10.1.0.0/16"
+subnets:
+  - subnet_name: "qa-subnet-01"
+    subnet_ip: "10.1.1.0/24"
+    subnet_region: "us-east1"
+    description: "QA Subnet 01"
+    secondary_ip_range:
+      - range_name: "qa-gke-services"
+        ip_cidr_range: "10.1.2.0/24"
+      - range_name: "qa-gke-pods"
+        ip_cidr_range: "10.1.3.0/20"
+  - subnet_name: "qa-subnet-02"
+    subnet_ip: "10.1.10.0/24"
+    subnet_region: "us-east1"
+    description: "QA Subnet 02"
+  - subnet_name: "qa-subnet-03"
+    subnet_ip: "10.1.20.0/24"
+    subnet_region: "us-east1"
+    description: "QA Subnet 03"
+  - subnet_name: "qa-subnet-04"
+    subnet_ip: "10.1.30.0/24"
+    subnet_region: "us-east1"
+    description: "QA Subnet 04"
+  - subnet_name: "qa-subnet-05"
+    subnet_ip: "10.1.40.0/24"
+    subnet_region: "us-east1"
+    description: "QA Subnet 05"
+
+state_bucket_name: "your-qa-tf-state-bucket" # Replace with a unique bucket name for QA state
+service_account_name: "qa-infra-creator"
+# Define project-level roles for the service account here if needed,
+# otherwise the default from modules/service-account/variables.tf will be used.
+# service_account_project_roles: ["roles/compute.admin", "roles/container.admin"]
+
+# Cloud DNS Configuration (using official module)
+dns_zone_name: "qa-test-example-com" # Unique name for the managed zone
+dns_name: "test.example.com." # The DNS name for the zone (must end with a dot)
+# Optional: If using private zones, specify the network name
+# dns_network_name: "qa-vpc-network"
+
+gke_cluster_name: "qa-gke-cluster"
+gke_node_pools:
+  - name: "pool1"
+    machine_type: "e2-medium"
+    node_count: 1
+    min_node_count: 1
+    max_node_count: 3
+    disk_size_gb: 50
+    disk_type: "pd-standard"
+    auto_upgrade: true
+    auto_repair: true
+  - name: "pool2"
+    machine_type: "e2-large"
+    node_count: 1
+    min_node_count: 1
+    max_node_count: 2
+    disk_size_gb: 100
+    disk_type: "pd-ssd"
+    auto_upgrade: true
+    auto_repair: true
+
+# Bastion Host Configuration (using official module)
+bastion_host_name: "qa-bastion-host"
+bastion_host_machine_type: "e2-small"
+bastion_host_disk_size_gb: 20
+# Specify the subnet name where the bastion host will be created
+bastion_host_subnet_name: "qa-subnet-01"
+# List of members (users, groups, service accounts) to grant IAP Tunnel User role
+# Example: ["user:user@example.com", "group:my-group@googlegroups.com"]
+bastion_host_iap_users: ["user:your-gcp-user@example.com"] # REPLACE with your GCP user email or group
