@@ -1,5 +1,6 @@
 gcp-infra/
 ├── terragrunt.hcl
+├── module-version.yml
 ├── vars/
 │   ├── dev-vars.yml
 │   └── qa-vars.yml
@@ -24,11 +25,15 @@ gcp-infra/
 │   │   ├── main.tf
 │   │   ├── outputs.tf
 │   │   └── variables.tf
-│   ├── dns/ # Now uses official module
+│   ├── dns/
 │   │   ├── main.tf
 │   │   ├── outputs.tf
 │   │   └── variables.tf
-│   └── bastion-host/ # Now uses official module
+│   ├── bastion-host/
+│   │   ├── main.tf
+│   │   ├── outputs.tf
+│   │   └── variables.tf
+│   └── ssl-certificate/ # Now uses google_compute_managed_ssl_certificate resource
 │       ├── main.tf
 │       ├── outputs.tf
 │       └── variables.tf

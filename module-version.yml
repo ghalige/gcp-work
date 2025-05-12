@@ -1,0 +1,12 @@
+# module-version.yml
+# Centralized versions for official Google Terraform modules
+
+module_versions:
+  service_accounts: "~> 4.0"
+  cloud_storage: "~> 4.0"
+  network: "~> 5.0"
+  cloud_nat: "~> 3.0"
+  kubernetes_engine: "~> 28.0"
+  cloud_dns: "~> 3.0"
+  bastion_host: "~> 4.0"
+  # Removed managed_ssl_certificate as it's not an official module

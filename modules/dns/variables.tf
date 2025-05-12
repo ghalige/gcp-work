@@ -24,3 +24,9 @@ variable "dns_network_name" {
   type        = string
   default     = null # Set to null if not using private zones
 }
+
+# Variable for module versions (read from terragrunt locals)
+variable "module_versions" {
+  description = "Map of module versions."
+  type        = map(string)
+}

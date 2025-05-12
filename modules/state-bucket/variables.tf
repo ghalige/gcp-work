@@ -17,3 +17,9 @@ variable "region" {
   description = "The region for the state bucket."
   type        = string
 }
+
+# Variable for module versions (read from terragrunt locals)
+variable "module_versions" {
+  description = "Map of module versions."
+  type        = map(string)
+}

@@ -21,3 +21,9 @@ variable "project_roles" {
     "roles/owner" # Consider using more granular roles for production
   ]
 }
+
+# Variable for module versions (read from terragrunt locals)
+variable "module_versions" {
+  description = "Map of module versions."
+  type        = map(string)
+}

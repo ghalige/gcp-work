@@ -6,7 +6,7 @@
 
 module "nat_gateway" {
   source  = "terraform-google-modules/cloud-nat/google"
-  version = "~> 3.0" # Use a specific version
+  version = var.module_versions.cloud_nat # Get version from variable
 
   project_id = var.project_id
   region     = var.region

@@ -6,7 +6,7 @@
 
 module "state_bucket" {
   source  = "terraform-google-modules/cloud-storage/google"
-  version = "~> 4.0" # Use a specific version
+  version = var.module_versions.cloud_storage # Get version from variable
 
   project_id = var.project_id
   names       = var.state_bucket_name

@@ -54,3 +54,9 @@ variable "bastion_host_iap_users" {
 #   type        = string
 #   default     = null # Set to null if not assigning a specific SA
 # }
+
+# Variable for module versions (read from terragrunt locals)
+variable "module_versions" {
+  description = "Map of module versions."
+  type        = map(string)
+}

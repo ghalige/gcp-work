@@ -60,3 +60,9 @@ variable "subnets_by_name" {
   description = "Map of subnet names to subnet objects."
   type        = map(any) # Using 'any' because the structure is complex, but could be more specific
 }
+
+# Variable for module versions (read from terragrunt locals)
+variable "module_versions" {
+  description = "Map of module versions."
+  type        = map(string)
+}

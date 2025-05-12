@@ -70,3 +70,9 @@ variable "gke_node_pools" {
     # Add other node pool configurations as needed (e.g., taints, labels, tags)
   }))
 }
+
+# Variable for module versions (read from terragrunt locals)
+variable "module_versions" {
+  description = "Map of module versions."
+  type        = map(string)
+}

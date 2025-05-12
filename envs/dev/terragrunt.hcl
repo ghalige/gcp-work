@@ -1,11 +1,11 @@
-# envs/qa/terragrunt.hcl
+# envs/dev/terragrunt.hcl
 
 # Include the common configuration from the root terragrunt.hcl.
 include {
   path = find_in_parent_folders()
 }
 
-# Define the modules to deploy for the 'qa' environment.
+# Define the modules to deploy for the 'dev' environment.
 
 # 1. State Bucket
 # This module needs to be applied first to set up the remote state backend.
@@ -17,6 +17,7 @@ terraform {
       "-var=project_id=${local.inputs.project_id}",
       "-var=state_bucket_name=${local.inputs.state_bucket_name}",
       "-var=region=${local.inputs.region}",
+      "-var=module_versions=${jsonencode(local.inputs.module_versions)}", # Pass module versions
     ]
   }
 }
@@ -28,9 +29,8 @@ module "service_account" {
   inputs = {
     project_id           = local.inputs.project_id
     service_account_name = local.inputs.service_account_name
-    # Pass project_roles from root terragrunt locals if defined in vars file,
-    # otherwise the module's default project_roles will be used.
-    project_roles = local.inputs.project_roles
+    project_roles        = local.inputs.project_roles
+    module_versions      = local.inputs.module_versions # Pass module versions
   }
 }
 
@@ -44,8 +44,8 @@ module "network" {
     network_cidr              = local.inputs.network_cidr
     subnets                   = local.inputs.subnets
     bastion_host_subnet_name  = local.inputs.bastion_host_subnet_name # Pass bastion subnet name
-    # jump_host_ssh_source_ranges = local.inputs.jump_host_ssh_source_ranges # Keep if needed for non-IAP access
     subnets_by_name           = local.inputs.subnets_by_name
+    module_versions           = local.inputs.module_versions # Pass module versions
   }
   # Ensure network is created after the service account (if service account is used for network creation).
   # dependencies = [module.service_account]
@@ -59,6 +59,7 @@ module "nat" {
     project_id   = local.inputs.project_id
     region       = local.inputs.region
     network_name = local.inputs.network_name # Use the network name output from the network module
+    module_versions = local.inputs.module_versions # Pass module versions
   }
   # Ensure NAT is created after the network.
   dependencies = [module.network]
@@ -79,6 +80,7 @@ module "gke" {
     ip_range_services_name  = local.inputs.ip_range_services_name # Use the secondary range name for services
     service_account_email   = module.service_account.outputs.service_account_email # Use the service account email output
     gke_node_pools          = local.inputs.gke_node_pools
+    module_versions         = local.inputs.module_versions # Pass module versions
   }
   # Ensure GKE is created after the network and service account.
   dependencies = [module.network, module.service_account]
@@ -92,6 +94,7 @@ module "dns" {
     dns_zone_name = local.inputs.dns_zone_name
     dns_name      = local.inputs.dns_name
     dns_network_name = local.inputs.dns_network_name # Pass optional network name
+    module_versions = local.inputs.module_versions # Pass module versions
   }
   # DNS can typically be created independently or depend on the project.
   # dependencies = [module.service_account] # Optional dependency if SA is needed for DNS creation
@@ -109,10 +112,22 @@ module "bastion_host" {
     network_name           = local.inputs.network_name # Use the network name output
     bastion_host_subnet_name  = local.inputs.bastion_host_subnet_name
     bastion_host_iap_users = local.inputs.bastion_host_iap_users
+    module_versions        = local.inputs.module_versions # Pass module versions
     # service_account_email  = module.service_account.outputs.service_account_email # Uncomment if assigning a specific SA
   }
   # Ensure the bastion host is created after the network.
   dependencies = [module.network]
 }
 
-# Removed the separate iap-access module as it's handled by the bastion-host module.
+# 8. SSL Certificate (using google_compute_managed_ssl_certificate resource)
+module "ssl_certificate" {
+  source = "../../modules/ssl-certificate" # Point to the local module wrapper
+  inputs = {
+    project_id           = local.inputs.project_id
+    ssl_certificate_name = local.inputs.ssl_certificate_name
+    ssl_domains          = local.inputs.ssl_domains
+    # Module versions are not needed for resources
+  }
+  # SSL certificate creation depends on DNS being configured for domain verification.
+  dependencies = [module.dns]
+}

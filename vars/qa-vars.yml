@@ -43,6 +43,10 @@ dns_name: "test.example.com." # The DNS name for the zone (must end with a dot)
 # Optional: If using private zones, specify the network name
 # dns_network_name: "qa-vpc-network"
 
+# SSL Certificate Configuration (using google_compute_managed_ssl_certificate resource)
+ssl_certificate_name: "qa-test-example-com-cert" # Name for the SSL certificate
+ssl_domains: ["test.example.com"] # List of domains for the certificate
+
 gke_cluster_name: "qa-gke-cluster"
 gke_node_pools:
   - name: "pool1"

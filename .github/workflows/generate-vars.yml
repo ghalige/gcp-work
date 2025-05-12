@@ -1,0 +1,194 @@
+# .github/workflows/generate-vars.yml
+
+name: Generate Environment Variables
+
+on:
+  # Trigger this workflow manually from the GitHub Actions UI
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to generate variables for (dev or qa)'
+        required: true
+        default: 'dev'
+        type: choice
+        options:
+        - dev
+        - qa
+      # Define inputs for non-sensitive variables that will go into the vars file
+      # These should match the structure and variables expected by your Terragrunt locals
+      network_name:
+        description: 'VPC Network Name'
+        required: true
+        default: 'vpc-network'
+      network_cidr:
+        description: 'VPC Network CIDR (e.g., 10.1.0.0/16)'
+        required: true
+        default: '10.1.0.0/16'
+      # Add inputs for subnet details if they vary significantly per environment
+      # For simplicity, assuming subnet structure is consistent and IPs are derived from network_cidr
+      # You might need more complex logic or separate inputs for subnets
+      dns_zone_name:
+        description: 'Cloud DNS Zone Name (e.g., test-example-com)'
+        required: true
+        default: 'test-example-com'
+      dns_name:
+        description: 'Cloud DNS Name (e.g., test.example.com.)'
+        required: true
+        default: 'test.example.com.'
+      bastion_host_name:
+        description: 'Bastion Host VM Name'
+        required: true
+        default: 'bastion-host'
+      bastion_host_machine_type:
+        description: 'Bastion Host Machine Type'
+        required: true
+        default: 'e2-small'
+      bastion_host_disk_size_gb:
+        description: 'Bastion Host Disk Size (GB)'
+        required: true
+        default: '20'
+      bastion_host_subnet_name:
+        description: 'Bastion Host Subnet Name'
+        required: true
+        default: 'subnet-01' # Assuming subnet-01 is the bastion subnet
+      # GKE Cluster Inputs
+      gke_cluster_name:
+        description: 'GKE Cluster Name'
+        required: true
+        default: 'gke-cluster'
+      gke_zone:
+        description: 'GKE Cluster Zone'
+        required: true
+        default: 'us-central1-a' # Default zone, region is handled by Terragrunt locals
+      gke_subnet_name:
+        description: 'GKE Node Subnet Name'
+        required: true
+        default: 'subnet-01' # Assuming subnet-01 is the GKE node subnet
+      gke_ip_range_services_name:
+        description: 'GKE Services Secondary IP Range Name'
+        required: true
+        default: 'gke-services' # Assuming this name from your vars file
+      gke_ip_range_pods_name:
+        description: 'GKE Pods Secondary IP Range Name'
+        required: true
+        default: 'gke-pods' # Assuming this name from your vars file
+      # GKE Node Pool Inputs (can be complex, simplified here)
+      # You might need to pass these as JSON strings or use more complex logic
+      gke_node_pools_json:
+        description: 'GKE Node Pools Configuration (JSON string)'
+        required: true
+        default: |
+          [
+            {
+              "name": "pool1",
+              "machine_type": "e2-medium",
+              "node_count": 1,
+              "min_node_count": 1,
+              "max_node_count": 3,
+              "disk_size_gb": 50,
+              "disk_type": "pd-standard",
+              "auto_upgrade": true,
+              "auto_repair": true
+            },
+            {
+              "name": "pool2",
+              "machine_type": "e2-large",
+              "node_count": 1,
+              "min_node_count": 1,
+              "max_node_count": 2,
+              "disk_size_gb": 100,
+              "disk_type": "pd-ssd",
+              "auto_upgrade": true,
+              "auto_repair": true
+            }
+          ]
+      # Add other inputs as needed for other variables in your vars files
+
+jobs:
+  generate_vars:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Generate Environment Variables File
+        run: |
+          # Construct the YAML content based on workflow inputs and secrets
+          # Use `cat <<EOF >` to write multi-line content to the file
+          # Be careful with indentation in YAML
+          # NOTE: This workflow assumes you have GCP secrets configured in your repository
+          # for project_id, region, TF_STATE_BUCKET_PREFIX, and BASTION_HOST_IAP_USERS.
+          # These secrets are used here to populate the vars file.
+
+          cat <<EOF > ./vars/${{ inputs.environment }}-vars.yml
+          # Dynamically generated variables for ${{ inputs.environment }} environment
+
+          # GCP Project and Region (from GitHub Secrets)
+          project_id: "${{ secrets.GCP_PROJECT_ID }}"
+          region: "${{ secrets.GCP_REGION }}"
+          zone: "${{ inputs.gke_zone }}" # Zone can be an input
+
+          # Network Configuration (from workflow inputs)
+          network_name: "${{ inputs.network_name }}"
+          network_cidr: "${{ inputs.network_cidr }}"
+          subnets:
+            - subnet_name: "${{ inputs.gke_subnet_name }}" # Assuming GKE and Bastion use the first subnet
+              subnet_ip: "10.1.1.0/24" # Hardcoded or make this an input
+              subnet_region: "${{ secrets.GCP_REGION }}"
+              description: "${{ inputs.environment }} Subnet 01"
+              secondary_ip_range:
+                - range_name: "${{ inputs.gke_ip_range_services_name }}"
+                  ip_cidr_range: "10.1.2.0/24" # Hardcoded or make this an input
+                - range_name: "${{ inputs.gke_ip_range_pods_name }}"
+                  ip_cidr_range: "10.1.3.0/20" # Hardcoded or make this an input
+            # Add other subnets here, hardcoded or from inputs
+            - subnet_name: "${{ inputs.environment }}-subnet-02"
+              subnet_ip: "10.1.10.0/24"
+              subnet_region: "${{ secrets.GCP_REGION }}"
+              description: "${{ inputs.environment }} Subnet 02"
+            - subnet_name: "${{ inputs.environment }}-subnet-03"
+              subnet_ip: "10.1.20.0/24"
+              subnet_region: "${{ secrets.GCP_REGION }}"
+              description: "${{ inputs.environment }} Subnet 03"
+            - subnet_name: "${{ inputs.environment }}-subnet-04"
+              subnet_ip: "10.1.30.0/24"
+              subnet_region: "${{ secrets.GCP_REGION }}"
+              description: "${{ inputs.environment }} Subnet 04"
+            - subnet_name: "${{ inputs.environment }}-subnet-05"
+              subnet_ip: "10.1.40.0/24"
+              subnet_region: "${{ secrets.GCP_REGION }}"
+              description: "${{ inputs.environment }} Subnet 05"
+
+
+          # Terraform State Bucket (from GitHub Secrets)
+          state_bucket_name: "${{ secrets.TF_STATE_BUCKET_PREFIX }}-${{ inputs.environment }}" # Use a prefix and environment name
+
+          # Service Account
+          service_account_name: "${{ inputs.environment }}-infra-creator"
+          # service_account_project_roles: ["roles/compute.admin", "roles/container.admin"] # Define roles if needed
+
+          # Cloud DNS Configuration (from workflow inputs)
+          dns_zone_name: "${{ inputs.environment }}-${{ inputs.dns_zone_name }}"
+          dns_name: "${{ inputs.dns_name }}"
+          # dns_network_name: "${{ inputs.network_name }}" # Uncomment if using private zones
+
+          # GKE Cluster Configuration (from workflow inputs)
+          gke_cluster_name: "${{ inputs.environment }}-${{ inputs.gke_cluster_name }}"
+          gke_node_pools: ${{ inputs.gke_node_pools_json }} # Directly use the JSON input
+
+          # Bastion Host Configuration (from workflow inputs and secrets)
+          bastion_host_name: "${{ inputs.environment }}-${{ inputs.bastion_host_name }}"
+          bastion_host_machine_type: "${{ inputs.bastion_host_machine_type }}"
+          bastion_host_disk_size_gb: ${{ inputs.bastion_host_disk_size_gb }}
+          bastion_host_subnet_name: "${{ inputs.bastion_host_subnet_name }}"
+          # Bastion Host IAP Users (from GitHub Secrets)
+          # IMPORTANT: Store this as a JSON string in the secret
+          bastion_host_iap_users: ${{ secrets.BASTION_HOST_IAP_USERS }}
+          EOF
+
+      - name: Upload Generated Variables File
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ inputs.environment }}-vars-file
+          path: ./vars/${{ inputs.environment }}-vars.yml

@@ -17,6 +17,7 @@ terraform {
       "-var=project_id=${local.inputs.project_id}",
       "-var=state_bucket_name=${local.inputs.state_bucket_name}",
       "-var=region=${local.inputs.region}",
+      "-var=module_versions=${jsonencode(local.inputs.module_versions)}", # Pass module versions
     ]
   }
 }
@@ -28,9 +29,8 @@ module "service_account" {
   inputs = {
     project_id           = local.inputs.project_id
     service_account_name = local.inputs.service_account_name
-    # Pass project_roles from root terragrunt locals if defined in vars file,
-    # otherwise the module's default project_roles will be used.
-    project_roles = local.inputs.project_roles
+    project_roles        = local.inputs.project_roles
+    module_versions      = local.inputs.module_versions # Pass module versions
   }
 }
 
@@ -43,9 +43,9 @@ module "network" {
     network_name              = local.inputs.network_name
     network_cidr              = local.inputs.network_cidr
     subnets                   = local.inputs.subnets
-    jump_host_subnet_name     = local.inputs.jump_host_subnet_name
-    # jump_host_ssh_source_ranges = local.inputs.jump_host_ssh_source_ranges # Keep if needed for non-IAP access
+    bastion_host_subnet_name  = local.inputs.bastion_host_subnet_name # Pass bastion subnet name
     subnets_by_name           = local.inputs.subnets_by_name
+    module_versions           = local.inputs.module_versions # Pass module versions
   }
   # Ensure network is created after the service account (if service account is used for network creation).
   # dependencies = [module.service_account]
@@ -59,6 +59,7 @@ module "nat" {
     project_id   = local.inputs.project_id
     region       = local.inputs.region
     network_name = local.inputs.network_name # Use the network name output from the network module
+    module_versions = local.inputs.module_versions # Pass module versions
   }
   # Ensure NAT is created after the network.
   dependencies = [module.network]
@@ -79,54 +80,54 @@ module "gke" {
     ip_range_services_name  = local.inputs.ip_range_services_name # Use the secondary range name for services
     service_account_email   = module.service_account.outputs.service_account_email # Use the service account email output
     gke_node_pools          = local.inputs.gke_node_pools
+    module_versions         = local.inputs.module_versions # Pass module versions
   }
   # Ensure GKE is created after the network and service account.
   dependencies = [module.network, module.service_account]
 }
 
-# 6. Cloud DNS Managed Zone
-# This module creates the Cloud DNS managed zone.
+# 6. Cloud DNS Managed Zone (using official module)
 module "dns" {
-  source = "../../modules/dns"
+  source = "../../modules/dns" # Point to the local module wrapper
   inputs = {
     project_id    = local.inputs.project_id
     dns_zone_name = local.inputs.dns_zone_name
     dns_name      = local.inputs.dns_name
-    # If using private zones, uncomment and pass the network name:
-    # network_name = local.inputs.network_name
+    dns_network_name = local.inputs.dns_network_name # Pass optional network name
+    module_versions = local.inputs.module_versions # Pass module versions
   }
   # DNS can typically be created independently or depend on the project.
   # dependencies = [module.service_account] # Optional dependency if SA is needed for DNS creation
 }
 
-# 7. Jump Host VM
-# This module creates the jump host VM.
-module "jump_host" {
-  source = "../../modules/jump-host"
+# 7. Bastion Host VM (using official module)
+module "bastion_host" {
+  source = "../../modules/bastion-host" # Point to the local module wrapper
   inputs = {
     project_id             = local.inputs.project_id
     zone                   = local.inputs.zone
-    jump_host_name         = local.inputs.jump_host_name
-    jump_host_machine_type = local.inputs.jump_host_machine_type
-    jump_host_disk_size_gb = local.inputs.jump_host_disk_size_gb
+    bastion_host_name      = local.inputs.bastion_host_name
+    bastion_host_machine_type = local.inputs.bastion_host_machine_type
+    bastion_host_disk_size_gb = local.inputs.bastion_host_disk_size_gb
     network_name           = local.inputs.network_name # Use the network name output
-    jump_host_subnet_name  = local.inputs.jump_host_subnet_name
-    service_account_email  = module.service_account.outputs.service_account_email # Use the service account email output
+    bastion_host_subnet_name  = local.inputs.bastion_host_subnet_name
+    bastion_host_iap_users = local.inputs.bastion_host_iap_users
+    module_versions        = local.inputs.module_versions # Pass module versions
+    # service_account_email  = module.service_account.outputs.service_account_email # Uncomment if assigning a specific SA
   }
-  # Ensure the jump host is created after the network and service account.
-  dependencies = [module.network, module.service_account]
+  # Ensure the bastion host is created after the network.
+  dependencies = [module.network]
 }
 
-# 8. IAP Access for Jump Host
-# This module grants IAP Tunnel User role to specified members.
-module "iap_access" {
-  source = "../../modules/iap-access"
+# 8. SSL Certificate (using google_compute_managed_ssl_certificate resource)
+module "ssl_certificate" {
+  source = "../../modules/ssl-certificate" # Point to the local module wrapper
   inputs = {
-    project_id    = local.inputs.project_id
-    zone          = local.inputs.zone
-    instance_name = module.jump_host.outputs.jump_host_name # Use the jump host name output
-    members       = local.inputs.iap_tunnel_users
+    project_id           = local.inputs.project_id
+    ssl_certificate_name = local.inputs.ssl_certificate_name
+    ssl_domains          = local.inputs.ssl_domains
+    # Module versions are not needed for resources
   }
-  # Ensure IAP access is configured after the jump host is created.
-  dependencies = [module.jump_host]
+  # SSL certificate creation depends on DNS being configured for domain verification.
+  dependencies = [module.dns]
 }

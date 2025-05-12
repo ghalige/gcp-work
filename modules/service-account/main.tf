@@ -6,7 +6,7 @@
 
 module "service_account" {
   source  = "terraform-google-modules/service-accounts/google"
-  version = "~> 4.0" # Use a specific version
+  version = var.module_versions.service_accounts # Get version from variable
 
   project_id   = var.project_id
   names        = [var.service_account_name]

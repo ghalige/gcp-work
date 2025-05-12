@@ -9,7 +9,7 @@ output "network_name" {
 # Output the self-link of the created VPC network.
 output "network_self_link" {
   description = "The self-link of the VPC network."
-  value       = module.vpc_network.network_self_link
+  value       = module.vpc_network.self_link
 }
 
 # Output the self-links of the created subnets.

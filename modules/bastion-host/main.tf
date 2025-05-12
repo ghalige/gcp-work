@@ -6,7 +6,7 @@
 
 module "bastion_host" {
   source  = "terraform-google-modules/bastion-host/google"
-  version = "~> 4.0" # Use a specific version
+  version = var.module_versions.bastion_host # Get version from variable
 
   project_id   = var.project_id
   zone         = var.zone

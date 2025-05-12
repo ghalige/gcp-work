@@ -21,11 +21,17 @@ locals {
   # Construct the path to the environment-specific variables file.
   vars_file_path = "${get_parent_dir()}/vars/${local.environment}-vars.yml"
 
-  # Read the variables from the YAML file using yamldecode.
+  # Read the variables from the environment-specific YAML file using yamldecode.
   vars = yamldecode(file(local.vars_file_path))
 
+  # Construct the path to the module versions YAML file.
+  module_versions_file_path = "${get_parent_dir()}/module-version.yml"
+
+  # Read the module versions from the YAML file using yamldecode.
+  module_versions = yamldecode(file(local.module_versions_file_path)).module_versions
+
   # Define inputs that will be passed to the modules.
-  # These inputs are derived from the variables read from the YAML file.
+  # These inputs are derived from the variables read from the YAML files.
   inputs = {
     project_id          = local.vars.project_id
     region              = local.vars.region
@@ -41,6 +47,9 @@ locals {
     dns_zone_name       = local.vars.dns_zone_name
     dns_name            = local.vars.dns_name
     dns_network_name    = lookup(local.vars, "dns_network_name", null) # Optional network for private zones
+    # SSL Certificate variables
+    ssl_certificate_name = local.vars.ssl_certificate_name
+    ssl_domains         = local.vars.ssl_domains
     gke_cluster_name    = local.vars.gke_cluster_name
     gke_node_pools      = local.vars.gke_node_pools
     # Bastion Host variables
@@ -50,6 +59,8 @@ locals {
     bastion_host_subnet_name     = local.vars.bastion_host_subnet_name
     bastion_host_iap_users       = local.vars.bastion_host_iap_users
 
+    # Module versions map
+    module_versions     = local.module_versions
 
     # Extract the name of the first subnet for the GKE module.
     # Assuming the first subnet in the list is where GKE nodes will reside.

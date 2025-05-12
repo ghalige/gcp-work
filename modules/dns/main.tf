@@ -6,7 +6,7 @@
 
 module "dns_zone" {
   source  = "terraform-google-modules/cloud-dns/google"
-  version = "~> 3.0" # Use a specific version
+  version = var.module_versions.cloud_dns # Get version from variable
 
   project_id  = var.project_id
   zone_name   = var.dns_zone_name
@@ -15,7 +15,7 @@ module "dns_zone" {
 
   # Optional: Configure private visibility for VPC networks
   # If using private zones, uncomment and provide the network name
-  # network_names = var.dns_network_name != null ? [var.dns_network_name] : []
+  network_names = var.dns_network_name != null ? [var.dns_network_name] : []
 
   # Optional: Configure DNSSEC
   # dnssec_config = {

@@ -25,3 +25,9 @@ variable "network_name" {
 #   type        = string
 #   default     = null
 # }
+
+# Variable for module versions (read from terragrunt locals)
+variable "module_versions" {
+  description = "Map of module versions."
+  type        = map(string)
+}

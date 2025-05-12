@@ -6,7 +6,7 @@
 
 module "vpc_network" {
   source  = "terraform-google-modules/network/google"
-  version = "~> 5.0" # Use a specific version
+  version = var.module_versions.network # Get version from variable
 
   project_id   = var.project_id
   network_name = var.network_name
